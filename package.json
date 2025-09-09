@@ -8,4 +8,6 @@
     "node-fecth": "^0.0.1-security",
     "node-fetch": "^3.3.2"
   }
+  "scripts": {
+    "start": "node server.js"
 }
