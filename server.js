@@ -109,7 +109,7 @@ app.post("/chat", async (req, res) => {
 
     let systemPrompt = "";
     try {
-      const modelFilePath = path.join(__dirname, `${agent}-ModelFile.txt`);
+      const modelFilePath = path.join(__dirname, `${agent}-el-vecinito-ModelFile.txt`);
       systemPrompt = fs.readFileSync(modelFilePath, "utf8");
     } catch {
       return userResponses[userId]?.status(500).json({
