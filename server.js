@@ -1,13 +1,12 @@
 // ========================
 // 📌 Importación de módulos
 // ========================
-import express from "express";
-import cors from "cors";
-import fetch from "node-fetch";
-import chalk from "chalk";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
+const express = require("express");
+const cors = require("cors");
+const fetch = require("node-fetch");
+const chalk = require("chalk");
+const path = require("path");
+const fs = require("fs");
 
 // ========================
 // 📌 Configuración básica
@@ -16,8 +15,7 @@ const app = express();
 const chatHistories = {};
 const lastSizeByUser = {};
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = __dirname; // ✅ En CommonJS ya está definido
 
 // ========================
 // 📌 Middlewares
@@ -193,7 +191,7 @@ app.post("/chat", async (req, res) => {
           Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "llama-4-scou", // ✅ tu modelo en Groq
+          model: "llama-4-scout", // ✅ ojo aquí: estaba mal escrito
           messages: [
             { role: "system", content: systemPrompt },
             ...chatHistories[userId],
