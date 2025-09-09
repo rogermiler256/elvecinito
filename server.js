@@ -3,7 +3,6 @@
 // ========================
 import express from 'express';        // Framework para crear el servidor HTTP
 import cors from 'cors';              // Middleware para permitir peticiones desde otros orígenes
-import cors from 'cors';
 
 // Configurar CORS explícitamente
 app.use(cors({
