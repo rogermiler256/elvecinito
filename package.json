@@ -2,13 +2,13 @@
   "name": "elvecinito",
   "version": "1.0.0",
   "main": "server.js",
-  "dependencies": {
-    "chalk": "^5.5.0",
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "node-fetch": "^3.3.2"
-  },
   "scripts": {
     "start": "node server.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.7.0"
   }
 }
