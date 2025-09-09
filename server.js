@@ -29,6 +29,18 @@ const __dirname = path.dirname(__filename);        // Directorio del archivo act
 // ========================
 app.use(express.static(path.join(__dirname, 'public'))); // Servir archivos estáticos desde /public
 app.use(cors());                                         // Permitir peticiones externas
+// 📌 Middlewares
+// ========================
+app.use(express.static(path.join(__dirname, 'public'))); // Servir archivos estáticos desde /public
+
+// 🔴 CORS bien configurado
+app.use(cors({
+  origin: ["https://elvecinito.onrender.com", "http://localhost:3000"],
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+app.options("*", cors()); // Permitir preflight requests (OPTIONS)
 app.use(express.json());                                 // Parsear JSON en peticiones
 
 // ========================
