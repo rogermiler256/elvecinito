@@ -199,33 +199,32 @@ app.post('/chat', async (req, res) => {
 
   try {
     // Llamada al modelo de IA en Ollama
-    const GROQ_API_KEY = process.env.GROQ_API_KEY; // guarda tu API key en las variables de entorno de Render
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+  },
+  body: JSON.stringify({
+    model: "llama3-8b-8192",  // usa este, es estable en Groq
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...chatHistories[userId]
+    ]
+  })
+});
 
-const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...chatHistories[userId]
-        ]
-      })
-    });
+const data = await response.json();
 
-    // 📥 Procesar respuesta de Ollama en streaming
-    let fullResponse = '';
-    const rl = readline.createInterface({
-      input: response.body,
-      crlfDelay: Infinity
-    });
+if (!data.choices || data.choices.length === 0) {
+  return res.status(500).json({ error: "No se recibió respuesta del modelo" });
+}
 
-    for await (const line of rl) {
-      if (!line.trim()) continue;
-      try {
-        const parsed = JSON.parse(line);
-        if (parsed.message?.content) {
-          fullResponse += parsed.message.content;
+const fullResponse = data.choices[0].message.content;
+chatHistories[userId].push({ role: 'assistant', content: fullResponse });
+
+res.json({ response: fullResponse });
+
         }
       } catch {
         // Ignorar líneas que no sean JSON
