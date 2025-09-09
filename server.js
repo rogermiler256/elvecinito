@@ -1,70 +1,52 @@
 // ========================
 // 📌 Importación de módulos
 // ========================
-import express from 'express';        // Framework para crear el servidor HTTP
-import cors from 'cors';              // Middleware para permitir peticiones desde otros orígenes
-
-// Configurar CORS explícitamente
-app.use(cors({
-  origin: "https://elvecinito.onrender.com",  // tu frontend
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-import fetch from 'node-fetch';       // Para hacer solicitudes HTTP desde el backend
-import chalk from 'chalk';            // Para darle color y estilo a los logs en consola
-import path from 'path';               // Manejo de rutas del sistema
-import { fileURLToPath } from 'url';   // Obtener __dirname en módulos ES
-import fs from 'fs';                   // Manejo de archivos y carpetas
-import readline from 'readline';       // Leer streams línea por línea
+import express from "express";
+import cors from "cors";
+import fetch from "node-fetch";
+import chalk from "chalk";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
 // ========================
 // 📌 Configuración básica
 // ========================
 const app = express();
-const port = 3000;
-const chatHistories = {};              // Guardar historial de conversaciones por usuario
-const lastSizeByUser = {};             // Guardar último tamaño de producto solicitado por usuario
+const chatHistories = {};
+const lastSizeByUser = {};
 
-// ========================
-// 📌 Configuración de rutas absolutas
-// ========================
-const __filename = fileURLToPath(import.meta.url); // Ruta del archivo actual
-const __dirname = path.dirname(__filename);        // Directorio del archivo actual
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ========================
 // 📌 Middlewares
 // ========================
-app.use(express.static(path.join(__dirname, 'public'))); // Servir archivos estáticos desde /public
-app.use(cors());                                         // Permitir peticiones externas
-// 📌 Middlewares
-// ========================
-app.use(express.static(path.join(__dirname, 'public'))); // Servir archivos estáticos desde /public
-
-// 🔴 CORS bien configurado
-app.use(cors({
-  origin: ["https://elvecinito.onrender.com", "http://localhost:3000"],
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
-
-app.options("*", cors()); // Permitir preflight requests (OPTIONS)
-app.use(express.json());                                 // Parsear JSON en peticiones
+app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  cors({
+    origin: ["https://elvecinito.onrender.com", "http://localhost:3000"],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.options("*", cors());
+app.use(express.json());
 
 // ========================
-// 📌 Función para leer imágenes según el tamaño
+// 📌 Función para leer imágenes
 // ========================
 function getImagesBySize(size = null) {
-  const sizes = size ? [size] : ['pequeño', 'mediano', 'grande'];
+  const sizes = size ? [size] : ["pequeño", "mediano", "grande"];
   let images = [];
 
-  sizes.forEach(s => {
-    const dirPath = path.join(__dirname, 'public', 'imagenes', 'productos', s);
+  sizes.forEach((s) => {
+    const dirPath = path.join(__dirname, "public", "imagenes", "productos", s);
     if (fs.existsSync(dirPath)) {
       const files = fs.readdirSync(dirPath);
       const sizeImages = files
-        .filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file)) // Filtra solo imágenes
-        .map(file => `/imagenes/productos/${s}/${file}`);    // Crea rutas accesibles
+        .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file))
+        .map((file) => `/imagenes/productos/${s}/${file}`);
       images.push(...sizeImages);
     }
   });
@@ -73,114 +55,102 @@ function getImagesBySize(size = null) {
 }
 
 // ========================
-// 📌 Endpoints para obtener imágenes
+// 📌 Rutas para imágenes
 // ========================
-
-// Obtener todas las imágenes sin importar el tamaño
-app.get('/imagenes', (req, res) => {
+app.get("/imagenes", (req, res) => {
   res.json({ images: getImagesBySize() });
 });
 
-// Obtener imágenes filtradas por tamaño específico
-app.get('/imagenes/:size', (req, res) => {
+app.get("/imagenes/:size", (req, res) => {
   const size = req.params.size.toLowerCase();
-  const validSizes = ['pequeño', 'mediano', 'grande'];
+  const validSizes = ["pequeño", "mediano", "grande"];
 
   if (!validSizes.includes(size)) {
-    return res.status(400).json({ error: 'Tamaño inválido' });
+    return res.status(400).json({ error: "Tamaño inválido" });
   }
 
   res.json({ images: getImagesBySize(size) });
 });
 
 // ========================
-// 📌 Configuración del agente y modelo IA
+// 📌 Configuración del agente IA
 // ========================
-const MODEL_NAME = "vecinito-model"; // Nombre del modelo en Ollama
-const AGENTE = "el-vecinito";        // Nombre del asistente
-
-// Palabras clave que activan la búsqueda de productos
+const AGENTE = "el-vecinito";
 const PRODUCT_KEYWORDS = ["kit", "kits", "botiquin", "botiquines", "producto"];
 
 // ========================
 // 📌 Endpoint principal de chat
 // ========================
-app.post('/chat', async (req, res) => {
-  const { prompt, userId } = req.body; // prompt: texto del usuario, userId: ID único del cliente
+app.post("/chat", async (req, res) => {
+  const { prompt, userId } = req.body;
 
-  // Validar datos requeridos
   if (!prompt || !userId) {
-    return res.status(400).json({ error: 'Faltan datos: prompt y userId son requeridos' });
+    return res
+      .status(400)
+      .json({ error: "Faltan datos: prompt y userId son requeridos" });
   }
 
-  // 📌 Mostrar información en consola
-  console.log(chalk.blue.bold('\n📨 Prompt del usuario:'));
+  console.log(chalk.blue.bold("\n📨 Prompt del usuario:"));
   console.log(chalk.white(`   ${prompt}`));
-  console.log(chalk.cyan.bold('\n🤖 Modelo usado:'), chalk.magenta(MODEL_NAME));
-  console.log(chalk.magenta.bold('👤 Agente:'), chalk.yellow(AGENTE));
-  console.log(chalk.green.bold('\n💬 Procesando respuesta...\n'));
 
   const lowerPrompt = prompt.toLowerCase();
 
-  // =========================================================
-  // 📌 Si el usuario menciona productos, devolver imágenes
-  // =========================================================
-  if (PRODUCT_KEYWORDS.some(word => lowerPrompt.includes(word))) {
+  // --- Si pide productos ---
+  if (PRODUCT_KEYWORDS.some((word) => lowerPrompt.includes(word))) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // 🕒 Retraso simulado antes de enviar la respuesta (2 segundos)
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Posibles palabras clave para tamaños
     const SIZE_KEYWORDS = {
-      pequeño: 'pequeño',
-      pequeno: 'pequeño',
-      mediano: 'mediano',
-      grande: 'grande'
+      pequeño: "pequeño",
+      pequeno: "pequeño",
+      mediano: "mediano",
+      grande: "grande",
     };
 
     let selectedSize = null;
-
-    // Detectar si el prompt incluye un tamaño específico
     for (const key in SIZE_KEYWORDS) {
       if (lowerPrompt.includes(key)) {
         selectedSize = SIZE_KEYWORDS[key];
-        lastSizeByUser[userId] = selectedSize; // Guardar el último tamaño usado
+        lastSizeByUser[userId] = selectedSize;
         break;
       }
     }
 
-    // Si no se menciona tamaño pero hay uno guardado, usarlo
     if (!selectedSize && lastSizeByUser[userId]) {
       selectedSize = lastSizeByUser[userId];
     }
 
     let images = [];
-
     try {
       if (selectedSize) {
-        // 📂 Leer imágenes de un tamaño específico
-        const dirPath = path.join(__dirname, 'public', 'imagenes', 'productos', selectedSize);
+        const dirPath = path.join(
+          __dirname,
+          "public",
+          "imagenes",
+          "productos",
+          selectedSize
+        );
         if (fs.existsSync(dirPath)) {
           const files = fs.readdirSync(dirPath);
           images = files
-            .filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file))
-            .map(file => `/imagenes/productos/${selectedSize}/${file}`);
-        } else {
-          console.warn(`⚠️ Carpeta no encontrada: ${dirPath}`);
+            .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file))
+            .map((file) => `/imagenes/productos/${selectedSize}/${file}`);
         }
       } else {
-        // 📂 Leer imágenes de todos los tamaños
-        const sizes = ['pequeño', 'mediano', 'grande'];
-        sizes.forEach(size => {
-          const dirPath = path.join(__dirname, 'public', 'imagenes', 'productos', size);
+        const sizes = ["pequeño", "mediano", "grande"];
+        sizes.forEach((size) => {
+          const dirPath = path.join(
+            __dirname,
+            "public",
+            "imagenes",
+            "productos",
+            size
+          );
           if (fs.existsSync(dirPath)) {
             const files = fs.readdirSync(dirPath);
             const sizeImages = files
-              .filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file))
-              .map(file => `/imagenes/productos/${size}/${file}`);
+              .filter((file) => /\.(jpg|jpeg|png|gif)$/i.test(file))
+              .map((file) => `/imagenes/productos/${size}/${file}`);
             images.push(...sizeImages);
-          } else {
-            console.warn(`⚠️ Carpeta no encontrada: ${dirPath}`);
           }
         });
       }
@@ -188,101 +158,73 @@ app.post('/chat', async (req, res) => {
       console.error("❌ Error leyendo carpetas de productos:", error);
     }
 
-    // 📤 Enviar respuesta con imágenes
     return res.json({
       response: selectedSize
         ? `Claro veci...Aquí tienes nuestros productos tamaño ${selectedSize}:`
         : "Claro veci..Aquí tienes todos nuestros kits y botiquines disponibles:",
-      images
+      images,
     });
   }
 
-  // ========================
-  // 📌 Si no pide productos, enviar a la IA
-  // ========================
-
-  // Crear historial de chat si no existe
+  // --- Si no pide productos ---
   if (!chatHistories[userId]) {
     chatHistories[userId] = [];
   }
-  chatHistories[userId].push({ role: 'user', content: prompt });
+  chatHistories[userId].push({ role: "user", content: prompt });
 
-  // Leer prompt base del archivo de configuración del agente
-  let systemPrompt = '';
+  let systemPrompt = "";
   try {
     const modelFilePath = path.join(__dirname, `${AGENTE}-ModelFile.txt`);
-    systemPrompt = fs.readFileSync(modelFilePath, 'utf8');
+    systemPrompt = fs.readFileSync(modelFilePath, "utf8");
   } catch (err) {
     console.error(`❌ No se pudo leer el ModelFile de ${AGENTE}:`, err);
-    return res.status(500).json({ error: `No se pudo cargar configuración de ${AGENTE}` });
+    return res
+      .status(500)
+      .json({ error: `No se pudo cargar configuración de ${AGENTE}` });
   }
 
-try {
-  // Llamada al modelo de IA en Groq
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...chatHistories[userId]
-      ]
-    })
-  });
-
-  const data = await response.json();
-
-  if (!data.choices || data.choices.length === 0) {
-    return res.status(500).json({ error: "No se recibió respuesta del modelo" });
-  }
-
-  const fullResponse = data.choices[0].message.content;
-  chatHistories[userId].push({ role: 'assistant', content: fullResponse });
-
-  return res.json({ response: fullResponse });
-
-} catch (error) {
-  console.error("❌ Error al comunicarse con Groq:", error);
-  return res.status(500).json({ error: "Error al comunicarse con Ollama/Groq" });
-}
-
+  try {
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "llama-4-scou", // ✅ tu modelo en Groq
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...chatHistories[userId],
+          ],
+        }),
       }
+    );
+
+    const data = await response.json();
+
+    if (!data.choices || data.choices.length === 0) {
+      return res
+        .status(500)
+        .json({ error: "No se recibió respuesta del modelo" });
     }
 
-    if (!fullResponse) {
-      console.log(chalk.red.bold('\n❌ No se obtuvo respuesta válida del modelo.\n'));
-      return res.status(500).json({ error: "No se pudo construir respuesta del modelo" });
-    }
+    const fullResponse = data.choices[0].message.content;
+    chatHistories[userId].push({ role: "assistant", content: fullResponse });
 
-    // Limpiar texto de caracteres no deseados
-    fullResponse = fullResponse.replace(/\*[^*]+\*/g, '').trim();
-
-    // Guardar respuesta en historial
-    chatHistories[userId].push({ role: 'assistant', content: fullResponse });
-
-    // Mostrar respuesta en consola
-    console.log(chalk.green.bold('\n✅ Respuesta generada:\n'));
-    console.log(chalk.white(fullResponse));
-    console.log(chalk.yellow('\n───────────────────────────────'));
-
-    // 📤 Enviar respuesta al cliente
-    res.json({ response: fullResponse });
-
+    return res.json({ response: fullResponse });
   } catch (error) {
-    console.error('❌ Error en /chat:', error);
-    res.status(500).json({ error: 'Error al comunicarse con Ollama' });
+    console.error("❌ Error en /chat:", error);
+    return res.status(500).json({ error: "Error al comunicarse con Groq" });
   }
 });
 
 // ========================
 // 📌 Servir index.html en la raíz
 // ========================
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // ========================
@@ -290,6 +232,8 @@ app.get('/', (req, res) => {
 // ========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(chalk.green.bold(`🚀 Servidor corriendo en:`), chalk.cyan(`http://localhost:${PORT}\n`));
+  console.log(
+    chalk.green.bold("🚀 Servidor corriendo en:"),
+    chalk.cyan(`http://localhost:${PORT}\n`)
+  );
 });
-
