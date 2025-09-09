@@ -199,11 +199,13 @@ app.post('/chat', async (req, res) => {
 
   try {
     // Llamada al modelo de IA en Ollama
-    const response = await fetch('http://localhost:11434/api/chat', {
-      method: 'POST',
+    const GROQ_API_KEY = process.env.GROQ_API_KEY; // guarda tu API key en las variables de entorno de Render
+
+const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: MODEL_NAME,
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
         messages: [
           { role: 'system', content: systemPrompt },
           ...chatHistories[userId]
