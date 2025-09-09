@@ -3,6 +3,15 @@
 // ========================
 import express from 'express';        // Framework para crear el servidor HTTP
 import cors from 'cors';              // Middleware para permitir peticiones desde otros orígenes
+import cors from 'cors';
+
+// Configurar CORS explícitamente
+app.use(cors({
+  origin: "https://elvecinito.onrender.com",  // tu frontend
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 import fetch from 'node-fetch';       // Para hacer solicitudes HTTP desde el backend
 import chalk from 'chalk';            // Para darle color y estilo a los logs en consola
 import path from 'path';               // Manejo de rutas del sistema
