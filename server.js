@@ -109,11 +109,12 @@ app.post("/chat", async (req, res) => {
 
     let systemPrompt = "";
     try {
-      const modelFilePath = path.join(__dirname, `${agent}-el-vecinito-ModelFile.txt`);
+      // Archivo fijo para tu modelo
+      const modelFilePath = path.join(__dirname, "elvecinitoModelFile.txt");
       systemPrompt = fs.readFileSync(modelFilePath, "utf8");
     } catch {
       return userResponses[userId]?.status(500).json({
-        error: `No se pudo cargar configuración de ${agent}`,
+        error: "No se pudo cargar la configuración del modelo",
       });
     }
 
