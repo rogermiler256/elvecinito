@@ -267,6 +267,8 @@ app.get('/', (req, res) => {
 // ========================
 // 📌 Iniciar servidor
 // ========================
-app.listen(port, () => {
-  console.log(chalk.green.bold(`🚀 Servidor corriendo en:`), chalk.cyan(`http://localhost:${port}\n`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(chalk.green.bold(`🚀 Servidor corriendo en:`), chalk.cyan(`http://localhost:${PORT}\n`));
 });
+
