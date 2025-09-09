@@ -1,13 +1,14 @@
 {
+  "name": "elvecinito",
+  "version": "1.0.0",
+  "main": "server.js",
   "dependencies": {
     "chalk": "^5.5.0",
     "cors": "^2.8.5",
-    "espress": "^0.0.0",
     "express": "^5.1.0",
-    "init": "^0.1.2",
-    "node-fecth": "^0.0.1-security",
     "node-fetch": "^3.3.2"
-  }
+  },
   "scripts": {
     "start": "node server.js"
+  }
 }
