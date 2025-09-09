@@ -265,7 +265,7 @@
         document.getElementById(`typing-el-vecinito`).style.display = "flex";
 
         try {
-            const response = await fetch("https://elvecinito.onrender.com/chat", {
+            const response = await fetch("https://elvecinito-server.onrender.com/chat", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
