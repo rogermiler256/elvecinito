@@ -217,8 +217,6 @@ app.post('/chat', async (req, res) => {
     return res.status(500).json({ error: `No se pudo cargar configuración de ${AGENTE}` });
   }
 
-  try {
-    // Llamada al modelo de IA en Ollama
 try {
   // Llamada al modelo de IA en Groq
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
