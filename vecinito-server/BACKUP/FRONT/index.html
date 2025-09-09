@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat El Vecinito</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        /* Contenedor de burbuja centrado */
+        .bubble-container {
+            position: fixed;
+            bottom: 400px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            z-index: 1000;
+        }
+
+        /* Burbuja flotante */
+        .chat-bubble {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border: 2px solid white;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .chat-bubble:hover,
+        .chat-bubble.active {
+            transform: scale(3.90);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+        }
+        .bubble-el-vecinito {
+            background-image: url('/imagenes/vecinito/vecinito.png');
+            background-size: cover;
+            background-position: 90% 3%;
+        }
+
+        /* Ventana de chat */
+        .chat-window {
+            position: fixed;
+            width: 350px;
+            max-height: 400px;
+            background: rgba(18, 18, 18, 0.6);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 9999;
+        }
+        .chat-window.show {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .chat-header {
+            background: rgba(32, 44, 51, 0.8);
+            color: #fff;
+            padding: 10px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            height: 300px;
+            padding: 40px;
+            overflow-y: auto;
+            color: #eaeaea;
+        }
+        .message {
+            margin-bottom: 8px;
+        }
+        .message.user {
+            text-align: right;
+            color: #4cf5e7;
+        }
+        .message.bot {
+            text-align: left;
+            color: #fff;
+        }
+
+        /* Indicador de escritura */
+        .typing-container {
+            position: relative;
+            height: 24px;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            position: absolute;
+            bottom: 6px;
+            left: 10px;
+        }
+        .typing-indicator span {
+            width: 10px;
+            height: 10px;
+            background-color: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            animation: blink 1.2s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0.3; }
+            40% { opacity: 1; }
+        }
+
+        /* Input */
+        .chat-input {
+            display: flex;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(32, 44, 51, 0.6);
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            background: transparent;
+            color: white;
+        }
+        .chat-input input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        .chat-input button {
+            padding: 8px;
+            background: rgba(37, 211, 102, 0.8);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Imágenes en grid con hover */
+        .chat-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .chat-images img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .chat-images img:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        /* Imagen ampliada */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10000;
+        }
+        .image-modal.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+        .image-modal.show img {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Burbuja única -->
+    <div class="bubble-container">
+        <div class="chat-bubble bubble-el-vecinito" onclick="toggleChat(this)"></div>
+    </div>
+
+    <!-- Chat El Vecinito -->
+    <div id="chat-el-vecinito" class="chat-window" style="left: calc(50% + 260px); bottom: 300px;">
+        <div class="chat-header">El Vecinito</div>
+        <div class="chat-messages" id="messages-el-vecinito"></div>
+        <div class="typing-container">
+            <div class="typing-indicator" id="typing-el-vecinito" style="display:none;">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="input-el-vecinito" placeholder="Escribir..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <!-- Modal de imagen -->
+    <div id="image-modal" class="image-modal" onclick="closeImageModal()">
+        <img src="" alt="Imagen ampliada">
+    </div>
+
+<script>
+    const history = [];
+
+    function toggleChat(bubble) {
+        const chatWindow = document.getElementById(`chat-el-vecinito`);
+        const isVisible = chatWindow.classList.contains("show");
+
+        chatWindow.classList.toggle("show", !isVisible);
+        bubble.classList.toggle("active", !isVisible);
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById(`input-el-vecinito`);
+        const message = input.value.trim();
+        if (!message) return;
+        history.push({ role: 'user', content: message });
+        displayMessage(message, 'user');
+        input.value = '';
+
+        // Detectar si es un kit específico
+        const lowerMsg = message.toLowerCase();
+        if (lowerMsg.includes("mediano") || lowerMsg.includes("grande") || lowerMsg.includes("pequeño")) {
+            document.getElementById(`typing-el-vecinito`).style.display = "flex";
+            displayMessage("¡Claro vecinito! Ya le muestro...", "bot");
+
+            setTimeout(async () => {
+                document.getElementById(`typing-el-vecinito`).style.display = "none";
+                let tipo = "";
+                if (lowerMsg.includes("mediano")) tipo = "mediano";
+                if (lowerMsg.includes("grande")) tipo = "grande";
+                if (lowerMsg.includes("pequeño")) tipo = "pequeño";
+
+                const res = await fetch(`/imagenes/${tipo}`);
+                const data = await res.json();
+                displayMessage(`Aquí está el kit ${tipo}:`, "bot", data.images || []);
+            }, 3000);
+
+            return;
+        }
+
+        document.getElementById(`typing-el-vecinito`).style.display = "flex";
+
+        try {
+            const res = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: message,
+                    model: 'el-vecinito-model',
+                    agent: 'el-vecinito',
+                    userId: 'vecinito-user'
+                })
+            });
+            const data = await res.json();
+
+            document.getElementById(`typing-el-vecinito`).style.display = "none";
+            displayMessage(data.response, 'bot', data.images || []);
+        } catch (err) {
+            document.getElementById(`typing-el-vecinito`).style.display = "none";
+            displayMessage('Error al conectar con el servidor', 'bot');
+        }
+    }
+
+    function displayMessage(text, sender, images = []) {
+        const container = document.getElementById(`messages-el-vecinito`);
+        const div = document.createElement('div');
+        div.className = `message ${sender}`;
+        div.textContent = text;
+        container.appendChild(div);
+
+        if (images.length > 0) {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = "chat-images";
+            images.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.addEventListener("click", () => openImageModal(src));
+                imgContainer.appendChild(img);
+            });
+            container.appendChild(imgContainer);
+        }
+
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    }
+
+    document.addEventListener("click", function(event) {
+        const isChat = event.target.closest(".chat-window");
+        const isBubble = event.target.closest(".chat-bubble");
+        if (!isChat && !isBubble) {
+            document.getElementById("chat-el-vecinito").classList.remove("show");
+            document.querySelector(".chat-bubble").classList.remove("active");
+        }
+    });
+
+    function openImageModal(src) {
+        const modal = document.getElementById("image-modal");
+        const modalImg = modal.querySelector("img");
+        modalImg.src = src;
+        modal.classList.add("show");
+    }
+
+    function closeImageModal() {
+        document.getElementById("image-modal").classList.remove("show");
+    }
+</script>
+
+</body>
+</html>
