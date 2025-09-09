@@ -1,337 +1,289 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Chat El Vecinito</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
+<meta charset="UTF-8">
+<title>Chat El Vecinito</title>
+<style>
+body { font-family: Arial, sans-serif; margin:0; background:#f3f0f0; color:white; }
 
-        /* Contenedor de burbuja centrado */
-        .bubble-container {
-            position: fixed;
-            bottom: 400px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            z-index: 1000;
-        }
+/* Burbuja chat */
+.bubble-container {
+  position: fixed; bottom: 265px; left: 800px; display:flex; gap:50px; z-index:1000;
+}
+.chat-bubble {
+  width:350px; height:350px; border-radius:50%; background-size:cover; background-position:center;
+  cursor:pointer; box-shadow:0 4px 8px rgba(0,0,0,0.3); border:2px solid white; transition: transform 0.2s ease;
+}
+.chat-bubble:hover, .chat-bubble.active { transform: scale(2.4); }
+.bubble-elvecinito { background-image: url('/imagenes/productos/pequeño.png'); }
 
-        /* Burbuja flotante */
-        .chat-bubble {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            border: 2px solid white;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .chat-bubble:hover,
-        .chat-bubble.active {
-            transform: scale(3.90);
-            box-shadow: 0 6px 14px rgba(0,0,0,0.4);
-        }
-        .bubble-el-vecinito {
-            background-image: url('public/imagenes/vecinito/vecinito.png');
-            background-size: cover;
-            background-position: 90% 3%;
-        }
+/* Chat ventana */
+.chat-window {
+  position: fixed; width:450px; max-height:450px; background: rgba(18,18,18,0.6);
+  border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  display:none; flex-direction:column; overflow:hidden; backdrop-filter: blur(12px);
+  border:1px solid rgba(255,255,255,0.15); opacity:0; transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease; z-index:9999;
+}
+.chat-window.show { display:flex; opacity:1; transform: translateY(0); }
+.chat-header { background: rgba(32,44,51,0.8); padding:10px; font-weight:bold; border-bottom:1px solid rgba(255,255,255,0.1); cursor: grab; }
+.chat-messages { flex:1; padding:50px; overflow-y:auto; color:#eaeaea; position:relative; }
+.message { margin-bottom:8px; }
+.message.user { text-align:right; color:#4cf5e7; }
+.message.bot { text-align:left; color:#fff; }
 
-        /* Ventana de chat */
-        .chat-window {
-            position: fixed;
-            width: 350px;
-            max-height: 400px;
-            background: rgba(18, 18, 18, 0.6);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            z-index: 9999;
-        }
-        .chat-window.show {
-            display: flex;
-            opacity: 1;
-            transform: translateY(0);
-        }
+/* Indicador escritura */
+.typing-container { position:relative; height:24px; }
+.typing-indicator { display:flex; gap:6px; position:absolute; bottom:6px; left:10px; }
+.typing-indicator span { width:10px; height:10px; background-color:rgba(255,255,255,0.6); border-radius:50%; animation:blink 1.2s infinite; }
+.typing-indicator span:nth-child(2){animation-delay:0.2s;}
+.typing-indicator span:nth-child(3){animation-delay:0.4s;}
+@keyframes blink { 0%,80%,100%{opacity:0.3;} 40%{opacity:1;} }
 
-        .chat-header {
-            background: rgba(32, 44, 51, 0.8);
-            color: #fff;
-            padding: 10px;
-            font-weight: bold;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+/* Input */
+.chat-input { display:flex; border-top:1px solid rgba(255,255,255,0.1); background: rgba(32,44,51,0.6);}
+.chat-input input { flex:1; padding:8px; border:none; background:transparent; color:white;}
+.chat-input input::placeholder { color: rgba(255,255,255,0.6);}
+.chat-input button { padding:8px; background: rgba(37,211,102,0.8); color:white; border:none; cursor:pointer; }
 
-        .chat-messages {
-            flex: 1;
-            height: 300px;
-            padding: 40px;
-            overflow-y: auto;
-            color: #eaeaea;
-        }
-        .message {
-            margin-bottom: 8px;
-        }
-        .message.user {
-            text-align: right;
-            color: #4cf5e7;
-        }
-        .message.bot {
-            text-align: left;
-            color: #fff;
-        }
+/* Galería */
+.image-gallery img { width:100%; border-radius:10px; transition: transform 0.3s ease; cursor:pointer; }
+.image-gallery img:hover { transform:scale(1.2); }
 
-        /* Indicador de escritura */
-        .typing-container {
-            position: relative;
-            height: 24px;
-        }
-        .typing-indicator {
-            display: flex;
-            gap: 6px;
-            position: absolute;
-            bottom: 6px;
-            left: 10px;
-        }
-        .typing-indicator span {
-            width: 10px;
-            height: 10px;
-            background-color: rgba(255,255,255,0.6);
-            border-radius: 50%;
-            animation: blink 1.2s infinite;
-        }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink {
-            0%, 80%, 100% { opacity: 0.3; }
-            40% { opacity: 1; }
-        }
-
-        /* Input */
-        .chat-input {
-            display: flex;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(32, 44, 51, 0.6);
-        }
-        .chat-input input {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            background: transparent;
-            color: white;
-        }
-        .chat-input input::placeholder {
-            color: rgba(255,255,255,0.6);
-        }
-        .chat-input button {
-            padding: 8px;
-            background: rgba(37, 211, 102, 0.8);
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        /* Imágenes en grid con hover */
-        .chat-images {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .chat-images img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.2);
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .chat-images img:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-        }
-
-        /* Imagen ampliada */
-        .image-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            z-index: 10000;
-        }
-        .image-modal.show {
-            opacity: 1;
-            pointer-events: all;
-        }
-        .image-modal img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            transform: scale(0.8);
-            transition: transform 0.3s ease;
-        }
-        .image-modal.show img {
-            transform: scale(1);
-        }
-    </style>
+/* Lightbox carrusel */
+#lightbox {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center;
+  z-index:10000; opacity:0; transition: opacity 0.25s ease;
+}
+#lightbox.show { opacity:1; }
+#lightbox img { max-width:90%; max-height:90%; border-radius:10px; transition: transform 0.25s ease, opacity 0.25s ease; }
+.lightbox-arrow {
+  position:absolute; top:50%; transform:translateY(-50%); font-size:2rem; color:white; cursor:pointer; user-select:none;
+  background: rgba(0,0,0,0.3); padding:5px 10px; border-radius:5px;
+}
+.arrow-left { left:20px; }
+.arrow-right { right:20px; }
+</style>
 </head>
 <body>
 
-    <!-- Burbuja única -->
-    <div class="bubble-container">
-        <div class="chat-bubble bubble-el-vecinito" onclick="toggleChat(this)"></div>
-    </div>
+<!-- Burbuja chat -->
+<div class="bubble-container">
+  <div class="chat-bubble bubble-elvecinito" onclick="toggleChat('elvecinito', this)"></div>
+</div>
 
-    <!-- Chat El Vecinito -->
-    <div id="chat-el-vecinito" class="chat-window" style="left: calc(50% + 260px); bottom: 300px;">
-        <div class="chat-header">El Vecinito</div>
-        <div class="chat-messages" id="messages-el-vecinito"></div>
-        <div class="typing-container">
-            <div class="typing-indicator" id="typing-el-vecinito" style="display:none;">
-                <span></span><span></span><span></span>
-            </div>
-        </div>
-        <div class="chat-input">
-            <input type="text" id="input-el-vecinito" placeholder="Escribir..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()">Enviar</button>
-        </div>
+<!-- Chat ventana -->
+<div id="chat-elvecinito" class="chat-window" style="left:1030px; bottom:49px;">
+  <div class="chat-header">El Vecinito</div>
+  <div class="chat-messages" id="messages-elvecinito"></div>
+  <div class="typing-container">
+    <div class="typing-indicator" id="typing-elvecinito" style="display:none;">
+      <span></span><span></span><span></span>
     </div>
+  </div>
+  <div class="chat-input">
+    <input type="text" id="input-elvecinito" placeholder="Escribir..." onkeypress="handleKeyPress(event,'elvecinito')">
+    <button onclick="sendMessage('elvecinito')">Enviar</button>
+  </div>
+</div>
 
-    <!-- Modal de imagen -->
-    <div id="image-modal" class="image-modal" onclick="closeImageModal()">
-        <img src="" alt="Imagen ampliada">
-    </div>
+<!-- Lightbox -->
+<div id="lightbox" style="display:none;">
+  <div class="arrow-left lightbox-arrow">&#10094;</div>
+  <div class="arrow-right lightbox-arrow">&#10095;</div>
+  <img src="">
+</div>
 
 <script>
-    const history = [];
+const histories = { elvecinito: [] };
+let carouselImages = [];
+let currentIndex = 0;
 
-    function toggleChat(bubble) {
-        const chatWindow = document.getElementById(`chat-el-vecinito`);
-        const isVisible = chatWindow.classList.contains("show");
+function toggleChat(agent, bubble) {
+    const chatWindow = document.getElementById(`chat-${agent}`);
+    const isVisible = chatWindow.classList.contains("show");
 
-        chatWindow.classList.toggle("show", !isVisible);
-        bubble.classList.toggle("active", !isVisible);
+    document.querySelectorAll(".chat-window").forEach(c => c.classList.remove("show"));
+    document.querySelectorAll(".chat-bubble").forEach(b => b.classList.remove("active"));
+
+    if (!isVisible) {
+        chatWindow.classList.add("show");
+        bubble.classList.add("active");
     }
+}
 
-    async function sendMessage() {
-        const input = document.getElementById(`input-el-vecinito`);
-        const message = input.value.trim();
-        if (!message) return;
-        history.push({ role: 'user', content: message });
-        displayMessage(message, 'user');
-        input.value = '';
+async function sendMessage(agent) {
+    const input = document.getElementById(`input-${agent}`);
+    const message = input.value.trim();
+    if (!message) return;
+    histories[agent].push({ role: 'user', content: message });
+    displayMessage(agent, message, 'user');
+    input.value = '';
 
-        // Detectar si es un kit específico
-        const lowerMsg = message.toLowerCase();
-        if (lowerMsg.includes("mediano") || lowerMsg.includes("grande") || lowerMsg.includes("pequeño")) {
-            document.getElementById(`typing-el-vecinito`).style.display = "flex";
-            displayMessage("¡Claro vecinito! Ya le muestro...", "bot");
+    document.getElementById(`typing-${agent}`).style.display = "flex";
 
-            setTimeout(async () => {
-                document.getElementById(`typing-el-vecinito`).style.display = "none";
-                let tipo = "";
-                if (lowerMsg.includes("mediano")) tipo = "mediano";
-                if (lowerMsg.includes("grande")) tipo = "grande";
-                if (lowerMsg.includes("pequeño")) tipo = "pequeño";
+    try {
+        const res = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: message, model: 'elvecinito-model', agent: agent, userId: agent+'-user' })
+        });
+        const data = await res.json();
+        document.getElementById(`typing-${agent}`).style.display = "none";
 
-                const res = await fetch(`/imagenes/${tipo}`);
-                const data = await res.json();
-                displayMessage(`Aquí está el kit ${tipo}:`, "bot", data.images || []);
-            }, 3000);
-
-            return;
+        if (data.response) displayMessage(agent, data.response, 'bot');
+        if (data.imagenes && data.imagenes.length > 0) {
+            displayImages(agent, data.imagenes);
         }
 
-        document.getElementById(`typing-el-vecinito`).style.display = "flex";
-
-        try {
-            const response = await fetch("https://elvecinito-server.onrender.com/chat", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: message,
-                    model: 'el-vecinito-model',
-                    agent: 'el-vecinito',
-                    userId: 'vecinito-user'
-                })
-            });
-            const data = await response.json();
-
-            document.getElementById(`typing-el-vecinito`).style.display = "none";
-            displayMessage(data.response, 'bot', data.images || []);
-        } catch (err) {
-            document.getElementById(`typing-el-vecinito`).style.display = "none";
-            displayMessage('Error al conectar con el servidor', 'bot');
-        }
+    } catch(err) {
+        document.getElementById(`typing-${agent}`).style.display = "none";
+        displayMessage(agent, 'Error al conectar con el servidor','bot');
     }
+}
 
-    function displayMessage(text, sender, images = []) {
-        const container = document.getElementById(`messages-el-vecinito`);
-        const div = document.createElement('div');
-        div.className = `message ${sender}`;
-        div.textContent = text;
-        container.appendChild(div);
+function displayMessage(agent, text, sender) {
+    const container = document.getElementById(`messages-${agent}`);
+    const div = document.createElement('div');
+    div.className = `message ${sender}`;
+    div.textContent = text;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
 
-        if (images.length > 0) {
-            const imgContainer = document.createElement('div');
-            imgContainer.className = "chat-images";
-            images.forEach(src => {
-                const img = document.createElement('img');
-                img.src = src;
-                img.addEventListener("click", () => openImageModal(src));
-                imgContainer.appendChild(img);
-            });
-            container.appendChild(imgContainer);
-        }
+function displayImages(agent, urls) {
+    const container = document.getElementById(`messages-${agent}`);
+    const div = document.createElement('div');
+    div.className = `message bot`;
 
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function handleKeyPress(event) {
-        if (event.key === "Enter") {
-            sendMessage();
-        }
-    }
-
-    document.addEventListener("click", function(event) {
-        const isChat = event.target.closest(".chat-window");
-        const isBubble = event.target.closest(".chat-bubble");
-        if (!isChat && !isBubble) {
-            document.getElementById("chat-el-vecinito").classList.remove("show");
-            document.querySelector(".chat-bubble").classList.remove("active");
-        }
+    let imgs = [];
+    urls.forEach(url => {
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.maxWidth = "100%";
+        img.style.borderRadius = "8px";
+        img.style.marginTop = "6px";
+        img.style.cursor = "pointer";
+        div.appendChild(img);
+        imgs.push(img.src);
+        img.onclick = () => openCarousel(imgs, imgs.indexOf(img.src));
     });
 
-    function openImageModal(src) {
-        const modal = document.getElementById("image-modal");
-        const modalImg = modal.querySelector("img");
-        modalImg.src = src;
-        modal.classList.add("show");
-    }
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
 
-    function closeImageModal() {
-        document.getElementById("image-modal").classList.remove("show");
+// --- Carrusel ---
+function openCarousel(images, index) {
+    carouselImages = images;
+    currentIndex = index;
+    const lb = document.getElementById("lightbox");
+    const imgEl = lb.querySelector("img");
+    imgEl.style.transform = "scale(0.97)";
+    imgEl.style.opacity = "0";
+    imgEl.src = carouselImages[currentIndex];
+    lb.style.display = "flex";
+    lb.addEventListener('click', blockDocOnce, { once: true });
+    requestAnimationFrame(()=>{
+      lb.classList.add("show");
+      requestAnimationFrame(()=>{
+        imgEl.style.transform = "scale(1)";
+        imgEl.style.opacity = "1";
+      });
+    });
+}
+
+function closeCarousel() {
+    const lb = document.getElementById("lightbox");
+    lb.classList.remove("show");
+    setTimeout(()=> lb.style.display="none",250);
+}
+
+function blockDocOnce(e){ e.stopPropagation(); }
+
+document.querySelector(".arrow-left").onclick = (e) => {
+    e.stopPropagation();
+    const img = document.querySelector("#lightbox img");
+    img.style.transform = "scale(0.97)";
+    img.style.opacity = "0";
+    setTimeout(()=>{
+      currentIndex = (currentIndex-1+carouselImages.length)%carouselImages.length;
+      img.src = carouselImages[currentIndex];
+      requestAnimationFrame(()=>{
+        img.style.transform = "scale(1)";
+        img.style.opacity = "1";
+      });
+    },120);
+};
+document.querySelector(".arrow-right").onclick = (e) => {
+    e.stopPropagation();
+    const img = document.querySelector("#lightbox img");
+    img.style.transform = "scale(0.97)";
+    img.style.opacity = "0";
+    setTimeout(()=>{
+      currentIndex = (currentIndex+1)%carouselImages.length;
+      img.src = carouselImages[currentIndex];
+      requestAnimationFrame(()=>{
+        img.style.transform = "scale(1)";
+        img.style.opacity = "1";
+      });
+    },120);
+};
+
+document.getElementById("lightbox").addEventListener('click', (e)=>{
+    if(e.target.id === "lightbox") closeCarousel();
+}, true);
+
+document.addEventListener("keydown",(e)=>{
+    const lb = document.getElementById("lightbox");
+    if(lb.style.display==="flex"){
+        if(e.key==="ArrowLeft") document.querySelector(".arrow-left").click();
+        if(e.key==="ArrowRight") document.querySelector(".arrow-right").click();
+        if(e.key==="Escape") closeCarousel();
     }
+});
+
+document.addEventListener("click", function(event) {
+    const lb = document.getElementById("lightbox");
+    const lightboxVisible = lb && lb.style.display === "flex";
+    if (lightboxVisible) return;
+
+    const isChat = event.target.closest(".chat-window");
+    const isBubble = event.target.closest(".chat-bubble");
+    if (!isChat && !isBubble) {
+        document.querySelectorAll(".chat-window").forEach(c => c.classList.remove("show"));
+        document.querySelectorAll(".chat-bubble").forEach(b => b.classList.remove("active"));
+    }
+});
+
+function makeChatDraggable(chatId){
+    const chatWindow=document.getElementById(chatId);
+    const header=chatWindow.querySelector('.chat-header');
+    let offsetX=0, offsetY=10, isDragging=false;
+    header.style.cursor='grab';
+    header.addEventListener('mousedown', (e)=>{
+        isDragging=true;
+        offsetX=e.clientX-chatWindow.getBoundingClientRect().left;
+        offsetY=e.clientY-chatWindow.getBoundingClientRect().top;
+        header.style.cursor='grabbing';
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove',(e)=>{
+        if(isDragging){
+            let maxX=window.innerWidth-chatWindow.offsetWidth;
+            let maxY=window.innerHeight-chatWindow.offsetHeight;
+            let newLeft=Math.min(Math.max(e.clientX-offsetX,0),maxX);
+            let newTop=Math.min(Math.max(e.clientY-offsetY,0),maxY);
+            chatWindow.style.left=newLeft+'px';
+            chatWindow.style.top=newTop+'px';
+        }
+    });
+    document.addEventListener('mouseup',()=>{ if(isDragging){ isDragging=false; header.style.cursor='grab'; } });
+}
+makeChatDraggable('chat-elvecinito');
+
+function handleKeyPress(event, agent){ if(event.key==="Enter") sendMessage(agent); }
 </script>
 
 </body>
