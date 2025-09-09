@@ -275,7 +275,7 @@
                     userId: 'vecinito-user'
                 })
             });
-            const data = await res.json();
+            const data = await response.json();
 
             document.getElementById(`typing-el-vecinito`).style.display = "none";
             displayMessage(data.response, 'bot', data.images || []);
